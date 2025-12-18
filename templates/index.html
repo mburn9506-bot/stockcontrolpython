@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Stock Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f4f4f4; }
+    tr.low { background: #ffe9e9; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    .badge.low { background: #ff4d4f; color: #fff; }
+    .badge.ok { background: #52c41a; color: #fff; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; flex: 1 1 360px; }
+    .actions { display: flex; gap: 8px; }
+    form.inline { display: inline; }
+    .flash { margin: 8px 0; padding: 8px; border-radius: 6px; }
+    .flash.error { background: #ffe9e9; color: #a8071a; }
+    .flash.success { background: #e6fffb; color: #006d75; }
+    input[type="number"] { width: 100px; }
+  </style>
+</head>
+<body>
+  <h1>Stock Control</h1>
+  <p>
+    Below-minimum items: <strong>{{ low_count }}</strong>
+  </p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="row">
+    <div class="card">
+      <h2>Add Item</h2>
+      <form method="post" action="{{ url_for('add_item') }}">
+        <div>
+          <label>Name</label><br />
+          <input type="text" name="name" required />
+        </div>
+        <div>
+          <label>Quantity</label><br />
+          <input type="number" name="quantity" value="0" required />
+        </div>
+        <div>
+          <label>Minimum Quantity</label><br />
+          <input type="number" name="min_quantity" value="0" required />
+        </div>
+        <div style="margin-top: 8px;">
+          <button type="submit">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <h2>Inventory</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Quantity</th>
+        <th>Min Qty</th>
+        <th>Status</th>
+        <th style="width: 320px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr class="{% if item.quantity < item.min_quantity %}low{% endif %}">
+        <td>{{ item.name }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.min_quantity }}</td>
+        <td>
+          {% if item.quantity < item.min_quantity %}
+            <span class="badge low">LOW</span>
+          {% else %}
+            <span class="badge ok">OK</span>
+          {% endif %}
+        </td>
+        <td>
+          <form class="inline" method="post" action="{{ url_for('update_item', item_id=item.id) }}">
+            <label>Qty</label>
+            <input type="number" name="quantity" value="{{ item.quantity }}" />
+            <label>Min</label>
+            <input type="number" name="min_quantity" value="{{ item.min_quantity }}" />
+            <button type="submit">Update</button>
+          </form>
+          <form class="inline" method="post" action="{{ url_for('delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete this item?');">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
